@@ -13,7 +13,6 @@ start_bruteforcing(Id, Index, ResultProc, Num, Started) when Started < Num ->
   spawn(?MODULE, bruteforce_password, [Id, Index, ResultProc, Num]),
   start_bruteforcing(Id, Index + 1, ResultProc, Num, Started + 1);
 start_bruteforcing(_Id, _Index, _ResultProc, _Num, _Started) ->
-  %io:format("Started ~p bruteforcing processes up to index ~p. Waiting for them to finish before starting another batch.~n", [_Started, _Index]),
   ok.
 
 check_hash(<<Zeroes:24, _/binary>>) ->
@@ -32,39 +31,29 @@ bruteforce_password(Id, Index, ResultProc, _Num) ->
 add_new_hash_if_position_not_taken([First|Rest], Pos, Hash) ->
   case lists:nth(6, First) of
     TakenPos when TakenPos == Pos ->
-      %io:format("Position ~p already taken (Hash ~p) ~n", [Pos, Hash]),
       [First] ++ Rest;
     _TakenPos ->
-      %io:format("Position ~p not yet taken (Hash ~p) ~n", [Pos, Hash]),
-      %io:format("Rest: ~p~n", [Rest]),
       [First] ++ add_new_hash_if_position_not_taken(Rest, Pos, Hash)
   end;
 add_new_hash_if_position_not_taken([], _Pos, Hash) ->
-  %io:format("New hash found for position ~p: ~p~n~n", [_Pos, Hash]),
   [Hash].
-
 
 check_part2_result(Result, Hash) ->
   case lists:nth(6, Hash) of
     Pos when Pos > 47, Pos < 56 ->
-      %io:format("Position between \"1\" and \"8\": ~p~n", [Pos]),
       add_new_hash_if_position_not_taken(Result, Pos, Hash);
     _Pos ->
-      %io:format("Position not between \"1\" and \"8\": ~p~n", [_Pos]),
       Result
   end.
 
 gather_results(ResultsPart1, ResultsPart2) when length(ResultsPart2) < 8 ->
-  %io:format("Gathering results.~n"),
   {NewResults1, NewResults2} = receive
               {more_processes, Id, Index, Num} ->
-                %io:format("Got asked for more processes.~n"),
                 start_bruteforcing(Id, Index, self(), Num, 0),
                 {ResultsPart1, ResultsPart2};
               {match, Id, Index, Hash} ->
                 HashStr = lists:flatten([io_lib:format("~2.16.0b", [B]) ||
                                          <<B>> <= Hash]),
-                io:format("Found match with ~p:  ~p~n",
                           [Id ++ integer_to_list(Index), HashStr]),
                 New1 = case ResultsPart1 of
                   Res when length(ResultsPart1) < 8 ->
@@ -74,7 +63,6 @@ gather_results(ResultsPart1, ResultsPart2) when length(ResultsPart2) < 8 ->
                 New2 = check_part2_result(ResultsPart2, HashStr),
                 {New1, New2}
             end,
-  %io:format("NewResults: ~p~n~n", [NewResults]),
   gather_results(NewResults1, NewResults2);
 gather_results(ResultsPart1, ResultsPart2) ->
   io:format("Password (Part1): "),
