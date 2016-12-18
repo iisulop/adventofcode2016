@@ -9,9 +9,9 @@ let rec repeat_string to_repeat times ?(result="") count =
 ;;
 
 let rec decompress original =
-  let rec decompress_internal decompressed original =
+  let rec decompress_internal length original =
   match String.contains original '(' with
-    | false -> String.concat "" [decompressed; original]
+    | false -> length + String.length original
     | true ->
         let marker_begin = (String.index original '(') + 1 in
         let marker_end = (String.index_from original marker_begin ')') - 1 in
@@ -24,11 +24,11 @@ let rec decompress original =
               let res = String.concat "" [(String.sub original 0 (marker_begin - 1)); sub] in
               let len = (String.length original) - marker_end - (int_of_string num) in
               let rest = String.sub original (marker_end + (int_of_string num) + 2) (len - 2) in
-              decompress_internal (String.concat "" [decompressed; res]) rest
+              decompress_internal (length + (String.length res)) rest
           | _ -> raise Not_found
-  in decompress_internal "" original
+  in decompress_internal 0 original
 ;;
 
 let input = read_line () in
 let output = decompress input in
-Printf.printf "%d\n" (String.length output)
+Printf.printf "%d\n" output
